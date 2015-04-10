@@ -41,7 +41,7 @@ int main( int argc, char **argv ) {
       ("horiz", po::value<int>(&board_w)->required(), "Number of horizontal corners")
       ("vert", po::value<int>(&board_h)->required(), "Number of vertical corners")
       ("input,i", po::value<string>(&input_dir)->required(), "Input directory")
-      ("calibfn,c", po::value<string>(&calib_fn)->default_value("stereocalib.yml"), "calibration filename");
+      ("calibfn,c", po::value<string>(&calib_fn)->default_value("calib.yml"), "calibration filename");
 
     po::positional_options_description positionalOptions; 
     positionalOptions.add("horiz", 1);
