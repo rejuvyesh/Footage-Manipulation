@@ -38,13 +38,13 @@ int main( int argc, char **argv ) {
       ("horiz", po::value<int>(&board_w)->required(), "Number of horizontal corners")
       ("vert", po::value<int>(&board_h)->required(), "Number of vertical corners")
       ("footage,f", po::value<string>(&footage_fn)->required(), "Footage file name")
-      ("calibfn,f", po::value<string>(&calib_fn)->default_value("stereocalib.yml"), "calibration filename");
+      ("calibfn,c", po::value<string>(&calib_fn)->default_value("stereocalib.yml"), "calibration filename");
 
     po::positional_options_description positionalOptions; 
     positionalOptions.add("poses", 1);
     positionalOptions.add("horiz", 1);
     positionalOptions.add("vert", 1);
-    positionalOptions,add("footage", 1);
+    positionalOptions.add("footage", 1);
 
     po::variables_map vm;
 
@@ -55,7 +55,8 @@ int main( int argc, char **argv ) {
 
       if ( vm.count( "help" ) )
       {
-        cout << "This is the calibration software for the gopro camera. " << endl << "To exit the program press <esc>." << endl << endl << desc << endl;
+        cout << "This is the calibration software for the gopro camera. " << endl << endl; 
+        cout << "Usage: " << argv[0] << " [options] <poses> <horiz> <vert> <footage> " << endl  << endl << desc << endl;
 
         return 0;
       }
