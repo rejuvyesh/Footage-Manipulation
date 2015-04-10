@@ -5,7 +5,7 @@ project(drone)
 
 # Find PCL, OpenCV and Boost
 find_package(OpenCV REQUIRED)
-find_package(Boost REQUIRED program_options)
+find_package(Boost REQUIRED program_options system filesystem)
 
 
 include_directories("include" ${OpenCV_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})

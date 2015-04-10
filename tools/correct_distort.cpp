@@ -8,43 +8,45 @@
 
 // Boost includes
 #include <boost/program_options.hpp>
+#include <boost/filesystem.hpp>
 
 // General C++ includes
 #include <iostream>
 #include <string>
 #include <vector>
 
+// Defines
+#define SCALE 0.2
+
 // namespaces
 using namespace std;
 using namespace cv;
 namespace po = boost::program_options;
+namespace fs = boost::filesystem;
 
 int main( int argc, char **argv ) {
 
   // Argument variables
   int cam; // Buff numbers
-  int num_boards; // num of diff poses
   int board_w; // num of horizontal corners
   int board_h; // num of vertical corners
   string calib_fn; // calibration file name
-  string footage_fn; // footage file name
+  string input_dir; // input directory
 
   try
   {
     po::options_description desc("Options");
     desc.add_options()
       ("help,h", "Print help messages")
-      ("poses", po::value<int>(&num_boards)->required(), "Number of different poses")
       ("horiz", po::value<int>(&board_w)->required(), "Number of horizontal corners")
       ("vert", po::value<int>(&board_h)->required(), "Number of vertical corners")
-      ("footage,f", po::value<string>(&footage_fn)->required(), "Footage file name")
+      ("input,i", po::value<string>(&input_dir)->required(), "Input directory")
       ("calibfn,c", po::value<string>(&calib_fn)->default_value("stereocalib.yml"), "calibration filename");
 
     po::positional_options_description positionalOptions; 
-    positionalOptions.add("poses", 1);
     positionalOptions.add("horiz", 1);
     positionalOptions.add("vert", 1);
-    positionalOptions.add("footage", 1);
+    positionalOptions.add("input", 1);
 
     po::variables_map vm;
 
@@ -56,7 +58,7 @@ int main( int argc, char **argv ) {
       if ( vm.count( "help" ) )
       {
         cout << "This is the calibration software for the gopro camera. " << endl << endl; 
-        cout << "Usage: " << argv[0] << " [options] <poses> <horiz> <vert> <footage> " << endl  << endl << desc << endl;
+        cout << "Usage: " << argv[0] << " [options] <horiz> <vert> <input> " << endl  << endl << desc << endl;
 
         return 0;
       }
@@ -89,60 +91,49 @@ int main( int argc, char **argv ) {
     // corners found from chessboard calibration
     vector<Point2f> corners;
 
-    Mat src, calib;
+    Mat src;
 
     char key; // Escape key
     int success = 0; // number of successful chessboard captures
 
-    // Initialize the cameras
-    VideoCapture capture(footage_fn);
+    fs::directory_iterator end_iter;
 
-    // Get calibration images
-    while( success < num_boards ) 
+    namedWindow( "Calibration", WINDOW_AUTOSIZE );
+    for ( fs::directory_iterator iter(input_dir); iter != end_iter; ++iter )
     {
-      // Get camera data
-      capture >> src;
-
-      // resize image
-      resize(src, src, Size(), 0.4, 0.4);
-      
-      // Convert to b/w
-      cvtColor(src, calib, CV_BGR2GRAY);
-
-      // Default OpenCV chessboard corner finders
-      bool found = findChessboardCorners(calib, board_sz, corners,
-          CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FILTER_QUADS);
-
-      if ( found)
+      // If it's not a directory, use it.
+      if ( is_regular_file(iter->path()) )
       {
-        cornerSubPix(calib, corners, Size(11,11), Size(-1,-1),
-            TermCriteria(CV_TERMCRIT_EPS | CV_TERMCRIT_ITER, 30, 0.1));
+        string curr_img = iter->path().string();
+        cout << curr_img << endl;
+        src = imread(curr_img, CV_LOAD_IMAGE_GRAYSCALE);
 
-        drawChessboardCorners(calib, board_sz, corners, found);
-      }
+        bool found = findChessboardCorners(src, board_sz, corners,
+            CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FILTER_QUADS);
 
-      // Display images
-      imshow("calib", calib);
+        if ( found )
+        {
+          cornerSubPix(src, corners, Size(11,11), Size(-1,-1),
+              TermCriteria(CV_TERMCRIT_EPS | CV_TERMCRIT_ITER, 30, 0.1));
 
-      key = waitKey(10);
-      // Pause for potential calibration image
-      if ( found )
-      {
-        key = waitKey(0);
-      }
-      
-      // Accept calibration image
-      if ( key == ' ' && found != 0 )
-      {
-        imagePoints.push_back(corners);
-        objectPoints.push_back(obj);
-        success++;
-        cout << success << " poses with corners stored." << endl;
-      }
-      // If something went wrong with calibration
-      if ( char(key) == 27 )
-      {
-        return 0;
+          drawChessboardCorners(src, board_sz, corners, found);
+          imagePoints.push_back(corners);
+          objectPoints.push_back(obj);
+          success++;
+          cout << success << " poses with corners stored." << endl;
+        }
+        // Resize for display
+        Mat vis;
+        resize(src, vis, Size(), SCALE, SCALE);
+        imshow("Calibration", vis);
+
+        // <esc> key to exit
+        key = waitKey(10);
+        if ( char(key) == 27 )
+        {
+          cout << "Exiting program. " << endl;
+          return 1;
+        }
       }
     }
 
@@ -169,35 +160,6 @@ int main( int argc, char **argv ) {
     fs << "distcoeffs" << distcoeffs;
 
     cout << "Done Calibration." << endl;
-
-    cout << "Starting Rectification..." << endl;
-
-    // Undistortion matrix
-    Mat undistort_mat;
-    while ( true )
-    {
-      // Get camera data
-      capture >> src;
-
-      // resize image
-      resize(src, src, Size(), 0.4, 0.4);
-      
-      // undistort image
-      undistort(src, undistort_mat, intrinsic, distcoeffs);
-
-      // Display undistorted image
-      imshow("undistort", undistort_mat);
-
-      // Wait for <esc> key to exit
-      key = waitKey(10);
-      if ( char(key) == 27 )
-      {
-        break;
-      }
-
-    }
-
-    capture.release();
   }
   catch ( exception& e )
   {
