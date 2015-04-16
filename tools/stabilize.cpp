@@ -48,15 +48,39 @@ using namespace std;
 using namespace cv;
 namespace po = boost::program_options;
 
+void disp_progress(float progress, int bar_width)
+{
+  cout << "[";
+  int pos = bar_width * progress;
+  for ( int i = 0; i < bar_width; ++i )
+  {
+    if ( i < pos )
+    {
+      cout << "=";
+    }
+    else if ( i == pos )
+    {
+      cout << ">";
+    }
+    else
+    {
+      cout << " ";
+    }
+  }
+  cout << "]" << int(progress * 100.0) << " %\r" ;
+  cout.flush();
+}
+
 int main( int argc, char **argv ) {
-  string fn;
-  int key = 0;
+  string fn, output_fn;
+  int key = 1;
   try
   {
     po::options_description desc("Options");
     desc.add_options()
       ("help,h", "Print help messages")
-      ("footage,f", po::value<string>(&fn)->required(), "footage file");
+      ("footage,f", po::value<string>(&fn)->required(), "footage file")
+      ("output,o", po::value<string>(&output_fn)->default_value("output.avi"), "output file");
 
     po::positional_options_description positionalOptions; 
     positionalOptions.add("footage", 1);
@@ -89,7 +113,11 @@ int main( int argc, char **argv ) {
     Mat curr, curr_grey;
     Mat prev, prev_grey;
 
-    capture >> prev;
+    do
+    {
+      capture >> prev;
+    }
+    while ( prev.data == NULL );
     cvtColor(prev, prev_grey, COLOR_BGR2GRAY);
 
     // Get previous to current frame transformation (dx, dy, da), for all frames
@@ -97,7 +125,9 @@ int main( int argc, char **argv ) {
     int max_frames = capture.get(CV_CAP_PROP_FRAME_COUNT);
     Mat last_T;
 
-    while ( true )
+    cout << "Analyzing" << endl;
+    int k = 0;
+    while ( k < max_frames - 1 )
     {
       capture >> curr;
       
@@ -145,6 +175,8 @@ int main( int argc, char **argv ) {
 
       curr.copyTo(prev);
       curr_grey.copyTo(prev_grey);
+      disp_progress((float)k/(max_frames-1), 50);
+      k++;
     }
 
     double a = 0;
@@ -214,19 +246,26 @@ int main( int argc, char **argv ) {
       new_prev_to_curr_transform.push_back(TransformParam(dx, dy, da));
     }
 
+    capture.release();
+
     // Apply the new transform to the vid
-    capture.set(CV_CAP_PROP_POS_FRAMES, 0);
+    VideoCapture capture2(fn);
+    //capture.set(CV_CAP_PROP_POS_FRAMES, 0);
+    VideoWriter writer;
+    writer.open(output_fn, capture2.get(CV_CAP_PROP_FOURCC), capture2.get(CV_CAP_PROP_FPS), Size((int) capture2.get(CV_CAP_PROP_FRAME_WIDTH), (int) capture2.get(CV_CAP_PROP_FRAME_HEIGHT)), true);
     Mat T(2,3,CV_64F);
 
     int vert_border = HORIZONTAL_BORDER_CROP * prev.rows / prev.cols;
 
-    int k = 0;
+    k = 0;
+    cout << endl << "Writing" << endl;
     while ( k < max_frames - 1 )
     {
-      capture >> curr;
+      capture2 >> curr;
 
       if ( curr.data == NULL )
       {
+        cout << "Corrupt data captured." << endl;
         break;
       }
 
@@ -245,21 +284,28 @@ int main( int argc, char **argv ) {
 
       resize( curr2, curr2, curr.size() );
 
-      Mat canvas = Mat::zeros( curr.rows, curr.cols*2+10, curr.type() );
+      //Mat canvas = Mat::zeros( curr.rows, curr.cols*2+10, curr.type() );
+      //Mat canvas;
 
-      curr.copyTo( canvas( Range::all(), Range(0, curr2.cols) ) );
-      curr2.copyTo( canvas( Range::all(), Range(curr2.cols+10, curr2.cols*2+10) ) );
+      //curr.copyTo( canvas( Range::all(), Range(0, curr2.cols) ) );
+      //curr2.copyTo( canvas( Range::all(), Range(curr2.cols+10, curr2.cols*2+10) ) );
 
-      imshow("Before and After", canvas);
-      ++k;
+      //imshow("Before and After", canvas);
+      //resize(curr2, canvas, Size(), SCALE, SCALE);
+      //imshow("Stabilized", curr2);
+      writer << curr2;
 
-      key = waitKey(1);
+      key = waitKey(10);
       if ( char(key) == 27 )
       {
         break;
       }
+
+      disp_progress((float)k/(max_frames-1), 50);
+      ++k;
     }
-    capture.release();
+    cout << endl;
+    capture2.release();
 
   }
   catch ( exception& e )
