@@ -3,7 +3,7 @@
 This project provides tools to help with the manipulation of the footage. The currently available tools are 
 
 * the **calibration** of the camera using a checkerboard _(tools/calibrate.cpp)_, 
- f* the **undistortion** of the footage _(tools/undistort.cpp)_ and
+* the **undistortion** of the footage _(tools/undistort.cpp)_ and
 * the **stabilization** of the footage _(tools/undistort.cpp)_
 
 ## How to Compile
