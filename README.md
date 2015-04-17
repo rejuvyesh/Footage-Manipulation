@@ -18,11 +18,11 @@ This project provides tools to help with the manipulation of the footage. The cu
 1. Install dependencies if not already done.
 2. Make a new directory to compile the code into 
 ```
-$> mkdir manip_bin_
+$> mkdir manip_bin
 ```
 3. Change into that directory
 ```
-$> cd manip_bin_
+$> cd manip_bin
 ```
 4. CMake the project
 ```
