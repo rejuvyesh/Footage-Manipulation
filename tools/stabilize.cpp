@@ -12,7 +12,11 @@
 
 // Defines
 #define SCALE 0.4
-#define HORIZONTAL_BORDER_CROP 50 // In pixels. Crops the border to reduce the black borders from stabilisation being too noticeable.
+
+// namespaces
+using namespace std;
+using namespace cv;
+namespace po = boost::program_options;
 
 struct TransformParam
 {
@@ -42,11 +46,6 @@ struct Trajectory
   double a; // angle
 };
 
-// namespaces
-using namespace std;
-using namespace cv;
-namespace po = boost::program_options;
-
 void disp_progress(float progress, int bar_width)
 {
   cout << "[";
@@ -66,20 +65,21 @@ void disp_progress(float progress, int bar_width)
       cout << " ";
     }
   }
-  cout << "]" << int(progress * 100.0) << " %\r" ;
+  cout << "] " << int(progress * 100.0) << "%\r" ;
   cout.flush();
 }
 
 int main( int argc, char **argv ) {
   string fn, output_fn;
-  int smoothing_rad;
+  int smoothing_rad, horizon_crop;
   int key = 1;
   try
   {
     po::options_description desc("Options");
     desc.add_options()
       ("help,h", "Print help messages")
-      ("smoothing_rad,s", po::value<int>(&smoothing_rad)->default_value(20), "Smoothing Radius, the larger the more stable the video, but less reactive to sudden panning")
+      ("srad,s", po::value<int>(&smoothing_rad)->default_value(20), "Smoothing Radius, the larger the more stable the video, but less reactive to sudden panning")
+      ("hcrop,c", po::value<int>(&horizon_crop)->default_value(30), "Horizontal Border Crop, crops the border to reduce the black borders from stabilisation being too noticeable.")
       ("footage,f", po::value<string>(&fn)->required(), "footage file")
       ("output,o", po::value<string>(&output_fn)->default_value("output.avi"), "output file");
 
@@ -256,7 +256,7 @@ int main( int argc, char **argv ) {
     writer.open(output_fn, CV_FOURCC('m','p','4','v'), capture2.get(CV_CAP_PROP_FPS), Size((int) capture2.get(CV_CAP_PROP_FRAME_WIDTH), (int) capture2.get(CV_CAP_PROP_FRAME_HEIGHT)), true);
     Mat T(2,3,CV_64F);
 
-    int vert_border = HORIZONTAL_BORDER_CROP * prev.rows / prev.cols;
+    int vert_border = horizon_crop * prev.rows / prev.cols;
 
     k = 0;
     cout << endl << "Writing" << endl;
@@ -281,26 +281,19 @@ int main( int argc, char **argv ) {
       Mat curr2;
       warpAffine( curr, curr2, T, curr.size() );
 
-      //curr2 = curr2( Range(vert_border, curr2.rows-vert_border), Range(HORIZONTAL_BORDER_CROP, curr2.cols-HORIZONTAL_BORDER_CROP) );
+      curr2 = curr2( Range(vert_border, curr2.rows-vert_border), Range(horizon_crop, curr2.cols-horizon_crop) );
 
-      //resize( curr2, curr2, curr.size() );
+      resize( curr2, curr2, curr.size() );
 
-      //Mat canvas = Mat::zeros( curr.rows, curr.cols*2+10, curr.type() );
-      //Mat canvas;
-
-      //curr.copyTo( canvas( Range::all(), Range(0, curr2.cols) ) );
-      //curr2.copyTo( canvas( Range::all(), Range(curr2.cols+10, curr2.cols*2+10) ) );
-
-      //imshow("Before and After", canvas);
-      //resize(curr2, canvas, Size(), SCALE, SCALE);
-      //imshow("Stabilized", curr2);
       writer << curr2;
 
+      //Uncomment to show.
+      /*imshow("Stabilized", curr2);
       key = waitKey(10);
       if ( char(key) == 27 )
       {
         break;
-      }
+      }*/
 
       disp_progress((float)k/(max_frames-1), 50);
       ++k;
