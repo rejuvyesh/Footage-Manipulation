@@ -86,5 +86,3 @@ Options:
 ```
 #### What does it do?
 Takes in the footage that you have recorded and creates the corresponding stabilized footage.
-
-N.B. For now we do not save the video.
