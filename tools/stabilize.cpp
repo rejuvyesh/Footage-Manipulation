@@ -12,8 +12,8 @@
 
 // Defines
 #define SCALE 0.4
-#define SMOOTHING_RADIUS 30 // In frames. The larger the more stable the video, but less reactive to sudden panning
-#define HORIZONTAL_BORDER_CROP 20 // In pixels. Crops the border to reduce the black borders from stabilisation being too noticeable.
+#define SMOOTHING_RADIUS 20 // In frames. The larger the more stable the video, but less reactive to sudden panning
+#define HORIZONTAL_BORDER_CROP 51 // In pixels. Crops the border to reduce the black borders from stabilisation being too noticeable.
 
 struct TransformParam
 {
@@ -252,7 +252,7 @@ int main( int argc, char **argv ) {
     VideoCapture capture2(fn);
     //capture.set(CV_CAP_PROP_POS_FRAMES, 0);
     VideoWriter writer;
-    writer.open(output_fn, capture2.get(CV_CAP_PROP_FOURCC), capture2.get(CV_CAP_PROP_FPS), Size((int) capture2.get(CV_CAP_PROP_FRAME_WIDTH), (int) capture2.get(CV_CAP_PROP_FRAME_HEIGHT)), true);
+    writer.open(output_fn, CV_FOURCC('m','p','4','v'), capture2.get(CV_CAP_PROP_FPS), Size((int) capture2.get(CV_CAP_PROP_FRAME_WIDTH), (int) capture2.get(CV_CAP_PROP_FRAME_HEIGHT)), true);
     Mat T(2,3,CV_64F);
 
     int vert_border = HORIZONTAL_BORDER_CROP * prev.rows / prev.cols;
