@@ -3,10 +3,11 @@
 This project provides tools to help with the manipulation of the footage. The currently available tools are 
 
 * the **calibration** of the camera using a checkerboard _(tools/calibrate.cpp)_, 
-* the **undistortion** of the footage _(tools/undistort.cpp)_ and
-* the **stabilization** of the footage _(tools/undistort.cpp)_
+* the **undistortion** of the footage _(tools/undistort.cpp)_,
+* the **stabilization** of the footage _(tools/undistort.cpp)_ and
+* the **splitting** of the footage into sub rectangles. _(tools/split_vid)_
 
-## How to Compile
+## How to Build and Run
 
 ### Dependencies
 1. C++ compiler
@@ -81,8 +82,31 @@ Usage: tools/stabilize [options] <footage>
 
 Options:
   -h [ --help ]                     Print help messages
+  -s [ --srad ] arg (=20)           Smoothing Radius, the larger the more
+                                    stable the video, but less reactive to
+                                    sudden panning
+  -c [ --hcrop ] arg (=30)          Horizontal Border Crop, crops the border to
+                                    reduce the black borders from stabilisation
+                                    being too noticeable.
   -f [ --footage ] arg              footage file
   -o [ --output ] arg (=output.avi) output file
 ```
 #### What does it do?
 Takes in the footage that you have recorded and creates the corresponding stabilized footage.
+
+### Splitting
+This is the splitting software for the footage.
+
+#### How do you use it?
+```
+Usage: tools/split_vid [options] <footage> <numx> <numy>
+
+Options:
+  -h [ --help ]            Print help messages
+  -f [ --footage ] arg     footage file
+  -x [ --numx ] arg        number of x splits
+  -y [ --numy ] arg        number of y splits
+  -o [ --output ] arg (=.) output directory
+```
+#### What does it do?
+Takes in the stabilized footage and splits it into the number of rectangles you would like.
