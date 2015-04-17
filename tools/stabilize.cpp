@@ -12,8 +12,7 @@
 
 // Defines
 #define SCALE 0.4
-#define SMOOTHING_RADIUS 20 // In frames. The larger the more stable the video, but less reactive to sudden panning
-#define HORIZONTAL_BORDER_CROP 51 // In pixels. Crops the border to reduce the black borders from stabilisation being too noticeable.
+#define HORIZONTAL_BORDER_CROP 50 // In pixels. Crops the border to reduce the black borders from stabilisation being too noticeable.
 
 struct TransformParam
 {
@@ -73,12 +72,14 @@ void disp_progress(float progress, int bar_width)
 
 int main( int argc, char **argv ) {
   string fn, output_fn;
+  int smoothing_rad;
   int key = 1;
   try
   {
     po::options_description desc("Options");
     desc.add_options()
       ("help,h", "Print help messages")
+      ("smoothing_rad,s", po::value<int>(&smoothing_rad)->default_value(20), "Smoothing Radius, the larger the more stable the video, but less reactive to sudden panning")
       ("footage,f", po::value<string>(&fn)->required(), "footage file")
       ("output,o", po::value<string>(&output_fn)->default_value("output.avi"), "output file");
 
@@ -203,7 +204,7 @@ int main( int argc, char **argv ) {
       double sum_a = 0;
       int count = 0;
 
-      for ( int j = -SMOOTHING_RADIUS; j <= SMOOTHING_RADIUS; ++j )
+      for ( int j = -smoothing_rad; j <= smoothing_rad; ++j )
       {
         if ( i+j >= 0 && i+j < traj.size() )
         {
@@ -280,9 +281,9 @@ int main( int argc, char **argv ) {
       Mat curr2;
       warpAffine( curr, curr2, T, curr.size() );
 
-      curr2 = curr2( Range(vert_border, curr2.rows-vert_border), Range(HORIZONTAL_BORDER_CROP, curr2.cols-HORIZONTAL_BORDER_CROP) );
+      //curr2 = curr2( Range(vert_border, curr2.rows-vert_border), Range(HORIZONTAL_BORDER_CROP, curr2.cols-HORIZONTAL_BORDER_CROP) );
 
-      resize( curr2, curr2, curr.size() );
+      //resize( curr2, curr2, curr.size() );
 
       //Mat canvas = Mat::zeros( curr.rows, curr.cols*2+10, curr.type() );
       //Mat canvas;
