@@ -87,7 +87,8 @@ Options:
   -c [ --hcrop ] arg (=30)          Horizontal Border Crop, crops the border to
                                     reduce the black borders from stabilization
                                     being too noticeable.
-  -s [ --startframe ] arg (=0)      Frame to do manual capturing on.
+  -m [ --manualframe ] arg (=0)     Frame to do manual capturing on.
+  -s [ --scalefactor ] arg (=0.25)  Scaling Factor for manual marking.
   -f [ --footage ] arg              footage file
   -o [ --output ] arg (=output.avi) output file
 

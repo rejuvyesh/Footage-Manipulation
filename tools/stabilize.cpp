@@ -10,8 +10,6 @@
 #include <vector>
 #include <cmath>
 
-// Defines
-#define SCALE 0.4
 
 // namespaces
 using namespace std;
@@ -49,14 +47,16 @@ struct Trajectory
 struct UserData
 {
   UserData() {}
-  UserData( Mat _img, vector<Point2f> *_corners, int _rect_size) {
+  UserData( Mat _img, vector<Point2f> *_corners, int _rect_size, float _scale_factor) {
     img = _img;
     corners = _corners;
     rect_size = _rect_size;
+    scale_factor = _scale_factor;
   }
   Mat img;
   vector<Point2f> *corners;
   int rect_size;
+  float scale_factor;
 };
 
 void disp_progress(float progress, int bar_width)
@@ -90,10 +90,9 @@ void select_features_callback( int event, int x, int y, int flags, void* userdat
   {
     vector<Point2f> corners;
     goodFeaturesToTrack(Mat( first_grey, Rect(x-(rect_size/2), y-(rect_size/2), rect_size, rect_size)), corners, 1, 0.1, 30);
-    ud.corners->push_back(corners[0]+Point2f(x-(rect_size/2),y-(rect_size/2)));
-    circle ( first_grey, ud.corners->back(), 4, Scalar(0, 255, 0), -1, 8, 0 );
+    ud.corners->push_back((corners[0]+Point2f(x-(rect_size/2),y-(rect_size/2)))*(1.0/ud.scale_factor));
+    circle ( first_grey, ud.corners->back()*ud.scale_factor, 4, Scalar(0, 255, 0), -1, 8, 0 );
     imshow("first", first_grey);
-    cout << ud.corners->size() << " corners detected." << endl;
   }
 }
 
@@ -101,6 +100,7 @@ int main( int argc, char **argv ) {
   string fn, output_fn;
   int box_size, horizon_crop;
   int start_frame;
+  float scale_factor;
   int key = 1;
   try
   {
@@ -109,7 +109,8 @@ int main( int argc, char **argv ) {
       ("help,h", "Print help messages")
       ("boxsize,b", po::value<int>(&box_size)->default_value(20), "The size of the box that you search for the best point to track in")
       ("hcrop,c", po::value<int>(&horizon_crop)->default_value(30), "Horizontal Border Crop, crops the border to reduce the black borders from stabilization being too noticeable.")
-      ("startframe,s", po::value<int>(&start_frame)->default_value(0), "Frame to do manual capturing on.")
+      ("manualframe,m", po::value<int>(&start_frame)->default_value(0), "Frame to do manual capturing on.")
+      ("scalefactor,s", po::value<float>(&scale_factor)->default_value(0.25), "Scaling Factor for manual marking.")
       ("footage,f", po::value<string>(&fn)->required(), "footage file")
       ("output,o", po::value<string>(&output_fn)->default_value("output.avi"), "output file");
 
@@ -144,7 +145,7 @@ int main( int argc, char **argv ) {
     VideoWriter writer;
     writer.open(output_fn, CV_FOURCC('m','p','4','v'), capturefirst.get(CV_CAP_PROP_FPS), Size((int) capturefirst.get(CV_CAP_PROP_FRAME_WIDTH), (int) capturefirst.get(CV_CAP_PROP_FRAME_HEIGHT)), true);
     Mat curr, curr_grey;
-    Mat first, first_grey;
+    Mat first, first_grey, first_grey_disp;
     int max_frames = capturefirst.get(CV_CAP_PROP_FRAME_COUNT);
     if ( start_frame > max_frames )
     {
@@ -158,13 +159,15 @@ int main( int argc, char **argv ) {
     }
     while ( first.data == NULL );
     cvtColor(first, first_grey, COLOR_BGR2GRAY);
+    resize(first_grey, first_grey_disp, Size(), scale_factor, scale_factor);
     vector <Point2f> first_corners, first_corners2;
-    struct UserData ud(first_grey, &first_corners, 20);
+    struct UserData ud(first_grey_disp, &first_corners, box_size, scale_factor);
 
     namedWindow("first", CV_WINDOW_AUTOSIZE);
     setMouseCallback("first", select_features_callback, &ud);
-    imshow("first", first_grey);
+    imshow("first", first_grey_disp);
     waitKey(0);
+    cout << first_corners.size() << " corners detected." << endl;
     destroyAllWindows();
     writer << first;
 
