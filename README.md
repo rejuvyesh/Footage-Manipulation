@@ -77,7 +77,8 @@ N.B. For now we do not save the video.
 This is the stabilization software for the camera.
 
 #### How do you use it?
-```Usage: tools/stabilize [options] <footage>
+```
+Usage: tools/stabilize [options] <footage>
 
 Options:
   -h [ --help ]                     Print help messages
