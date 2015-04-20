@@ -92,8 +92,9 @@ Options:
   -o [ --output ] arg (=output.avi) output file
 
 ```
+When run, manually select the points that you want to track.
 #### What does it do?
-Takes in the footage that you have recorded and creates the corresponding stabilized footage. When run manually select the points that you want to track.
+Takes in the footage that you have recorded and creates the corresponding stabilized footage. 
 
 ### Splitting
 This is the splitting software for the footage.
