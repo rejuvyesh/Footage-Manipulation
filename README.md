@@ -77,22 +77,22 @@ N.B. For now we do not save the video.
 This is the stabilization software for the camera.
 
 #### How do you use it?
-```
-Usage: tools/stabilize [options] <footage>
+```Usage: tools/stabilize [options] <footage>
 
 Options:
   -h [ --help ]                     Print help messages
-  -s [ --srad ] arg (=20)           Smoothing Radius, the larger the more
-                                    stable the video, but less reactive to
-                                    sudden panning
+  -b [ --boxsize ] arg (=20)        The size of the box that you search for the
+                                    best point to track in
   -c [ --hcrop ] arg (=30)          Horizontal Border Crop, crops the border to
-                                    reduce the black borders from stabilisation
+                                    reduce the black borders from stabilization
                                     being too noticeable.
+  -s [ --startframe ] arg (=0)      Frame to do manual capturing on.
   -f [ --footage ] arg              footage file
   -o [ --output ] arg (=output.avi) output file
+
 ```
 #### What does it do?
-Takes in the footage that you have recorded and creates the corresponding stabilized footage.
+Takes in the footage that you have recorded and creates the corresponding stabilized footage. When run manually select the points that you want to track.
 
 ### Splitting
 This is the splitting software for the footage.
