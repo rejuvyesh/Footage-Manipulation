@@ -101,7 +101,6 @@ int main( int argc, char **argv ) {
   int box_size, horizon_crop;
   int start_frame;
   float scale_factor;
-  int key = 1;
   try
   {
     po::options_description desc("Options");

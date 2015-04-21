@@ -10,7 +10,7 @@ This project provides tools to help with the manipulation of the footage. The cu
 ## How to Build and Run
 
 ### Dependencies
-1. C++ compiler
+1. C++11 compiler
 2. OpenCV2
 3. BOOST libraries
 4. CMake
@@ -105,11 +105,12 @@ This is the splitting software for the footage.
 Usage: tools/split_vid [options] <footage> <numx> <numy>
 
 Options:
-  -h [ --help ]            Print help messages
-  -f [ --footage ] arg     footage file
-  -x [ --numx ] arg        number of x splits
-  -y [ --numy ] arg        number of y splits
-  -o [ --output ] arg (=.) output directory
+  -h [ --help ]               Print help messages
+  -f [ --footage ] arg        footage file
+  -x [ --numx ] arg           number of x splits
+  -y [ --numy ] arg           number of y splits
+  -t [ --timesplit ] arg (=1) number of time splits
+  -o [ --output ] arg (=.)    output directory
 ```
 #### What does it do?
-Takes in the stabilized footage and splits it into the number of rectangles you would like.
+Takes in the stabilized footage and splits it into the number of rectangles and time zones that you would like.

@@ -27,7 +27,6 @@ namespace fs = boost::filesystem;
 int main( int argc, char **argv ) {
 
   // Argument variables
-  int cam; // Buff numbers
   int board_w; // num of horizontal corners
   int board_h; // num of vertical corners
   string calib_fn; // calibration file name

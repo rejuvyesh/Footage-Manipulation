@@ -11,6 +11,8 @@
 #include <map>
 #include <cmath>
 #include <sstream>
+#include <thread>
+#include <mutex>
 
 // Defines
 #define SCALE 0.4
@@ -19,6 +21,9 @@
 using namespace std;
 using namespace cv;
 namespace po = boost::program_options;
+
+// global variables
+mutex mtx;
 
 void disp_progress(float progress, int bar_width)
 {
@@ -43,10 +48,53 @@ void disp_progress(float progress, int bar_width)
   cout.flush();
 }
 
+void split_img( int split_num, int x, int y, int num_x, int num_y, int time_split, string fn, string out_dir ) {
+  mtx.lock();
+  cout << "worker " << x << "-" << y << "-" << split_num << " running." << endl;
+  mtx.unlock();
+  VideoCapture capture(fn);
+  int max_frames = capture.get(CV_CAP_PROP_FRAME_COUNT);
+
+  int rect_width = (int) capture.get(CV_CAP_PROP_FRAME_WIDTH)/num_x;
+  int rect_height = (int) capture.get(CV_CAP_PROP_FRAME_HEIGHT)/num_y;
+
+  int start_frame = split_num * (max_frames / time_split);
+
+  capture.set(CV_CAP_PROP_POS_FRAMES, start_frame);
+  Size sz = Size(rect_width, rect_height);
+
+  stringstream out_key;
+  out_key << y << "-" << x << "-" << split_num;
+  VideoWriter writer;
+  string out_fn = out_dir + "/" + out_key.str() + ".avi"; 
+  writer.open(out_fn, CV_FOURCC('m','p','4','v'), capture.get(CV_CAP_PROP_FPS), sz, true);
+
+  Mat src;
+  Rect rect = Rect( x*rect_width, y*rect_height, rect_width, rect_height );
+
+  int k = 0;
+  while ( k < (max_frames / time_split)-1 )
+  {
+    capture >> src;
+    if ( src.data == NULL )
+      break;
+
+    writer << Mat(src, rect);
+
+    int percent = int(100 * ((float)k/(max_frames/time_split)));
+    if ( percent % 5 == 0 )
+    {
+      mtx.lock();
+      cout << "worker " << x << "-" << y << "-" << split_num << ": " << percent << "%" << endl;
+      mtx.unlock();
+    }
+    k++;
+  }
+}
+
 int main( int argc, char **argv ) {
   string fn, out_dir;
-  int num_x, num_y;
-  int key = 0;
+  int num_x, num_y, time_split;
   try
   {
     po::options_description desc("Options");
@@ -55,6 +103,7 @@ int main( int argc, char **argv ) {
       ("footage,f", po::value<string>(&fn)->required(), "footage file")
       ("numx,x", po::value<int>(&num_x)->required(), "number of x splits")
       ("numy,y", po::value<int>(&num_y)->required(), "number of y splits")
+      ("timesplit,t", po::value<int>(&time_split)->default_value(1), "number of time splits")
       ("output,o", po::value<string>(&out_dir)->default_value("."), "output directory");
 
     po::positional_options_description positionalOptions; 
@@ -86,70 +135,25 @@ int main( int argc, char **argv ) {
       return 1;
     }
 
-    VideoCapture capture(fn);
-    Mat src;
-    map <string, VideoWriter> writers;
-    Size sz = Size((int) capture.get(CV_CAP_PROP_FRAME_WIDTH)/num_x, (int) capture.get(CV_CAP_PROP_FRAME_HEIGHT)/num_y);
-
-    for ( int ny = 0; ny < num_y; ++ny )
+    vector <thread> workers;
+    for ( int time_num = 0; time_num < time_split; ++time_num )
     {
-      for ( int nx = 0; nx < num_x; ++nx )
+      for ( int ny = 0; ny < num_y; ++ny )
       {
-        stringstream out_key;
-        out_key << ny << "-" << nx ;
-        VideoWriter writer;
-        string out_fn = out_dir + "/" + out_key.str() + ".avi"; 
-        writer.open(out_fn, CV_FOURCC('m','p','4','v'), capture.get(CV_CAP_PROP_FPS), sz, true);
-        writers[out_key.str()] = writer;
+        for ( int nx = 0; nx < num_x; ++nx )
+        {
+          workers.push_back(thread(split_img, time_num, nx, ny, num_x, num_y, time_split, fn, out_dir));
+        }
       }
     }
-    VideoWriter tmp;
-    tmp.open("temp.avi", CV_FOURCC('m','p','4','v'), capture.get(CV_CAP_PROP_FPS), sz, true);
 
-
-    int max_frames = capture.get(CV_CAP_PROP_FRAME_COUNT);
-    int k = 0;
-
-    cout << "Splitting:" << endl;
-    while ( k < max_frames - 1 )
+    while ( workers.size() > 0 )
     {
-      capture >> src;
-      if ( src.data == NULL )
-      {
-        break;
-      }
-      int rect_width = src.cols / num_x;
-      int rect_height = src.rows / num_y;
-      map <string, Mat> splits;
-
-      int nx = 0;
-      int ny = 0;
-      for ( int y = 0; y < src.rows; y += rect_height )
-      {
-        for ( int x = 0; x < src.cols; x += rect_width )
-        {
-          Rect rect = Rect( x, y, rect_width, rect_height);
-          stringstream key;
-          key << ny << "-" << nx ;
-          Mat sub_mat = Mat(src, rect);
-          writers[key.str()] << sub_mat;
-          nx++;
-        }
-        ny++;
-        nx = 0;
-      }
-
-      // hit <esc> to exit
-      key = waitKey(1);
-      if ( char(key) == 27 )
-      {
-        break;
-      }
-      disp_progress((float)k/(max_frames-1), 50);
-      k++;
+      workers.back().join();
+      workers.pop_back();
     }
     cout << endl;
-    
+    return 0;
   }
   catch ( exception& e )
   {
