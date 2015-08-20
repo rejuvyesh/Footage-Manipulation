@@ -88,6 +88,7 @@ Options:
                                     reduce the black borders from stabilization
                                     being too noticeable.
   -m [ --manualframe ] arg (=0)     Frame to do manual capturing on.
+  -e [ --endframe ] arg(= end of video ) Frame to stop stabilization at.
   -s [ --scalefactor ] arg (=0.25)  Scaling Factor for manual marking.
   -f [ --footage ] arg              footage file
   -o [ --output ] arg (=output.avi) output file

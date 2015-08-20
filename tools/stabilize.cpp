@@ -101,6 +101,7 @@ int main( int argc, char **argv ) {
   int box_size, horizon_crop;
   int start_frame;
   float scale_factor;
+  int end_frame;
   try
   {
     po::options_description desc("Options");
@@ -109,6 +110,7 @@ int main( int argc, char **argv ) {
       ("boxsize,b", po::value<int>(&box_size)->default_value(20), "The size of the box that you search for the best point to track in")
       ("hcrop,c", po::value<int>(&horizon_crop)->default_value(30), "Horizontal Border Crop, crops the border to reduce the black borders from stabilization being too noticeable.")
       ("manualframe,m", po::value<int>(&start_frame)->default_value(0), "Frame to do manual capturing on.")
+      ("endframe,e", po::value<int>(&end_frame)->default_value(0), "Frame to stop stabilization at.")
       ("scalefactor,s", po::value<float>(&scale_factor)->default_value(0.25), "Scaling Factor for manual marking.")
       ("footage,f", po::value<string>(&fn)->required(), "footage file")
       ("output,o", po::value<string>(&output_fn)->default_value("output.avi"), "output file");
@@ -139,18 +141,25 @@ int main( int argc, char **argv ) {
       cerr << desc << endl;
       return 1;
     }
-
+    if (end_frame > 0 && end_frame < start_frame)
+    {
+      throw invalid_argument( "selected end frame is before start frame");
+    }
     VideoCapture capturefirst(fn);
     VideoWriter writer;
     writer.open(output_fn, CV_FOURCC('m','p','4','v'), capturefirst.get(CV_CAP_PROP_FPS), Size((int) capturefirst.get(CV_CAP_PROP_FRAME_WIDTH), (int) capturefirst.get(CV_CAP_PROP_FRAME_HEIGHT)), true);
     Mat curr, curr_grey;
     Mat first, first_grey, first_grey_disp;
     int max_frames = capturefirst.get(CV_CAP_PROP_FRAME_COUNT);
+    printf("Number of frames in video: %d\n",max_frames);
     if ( start_frame > max_frames )
     {
       throw invalid_argument( "start_frame larger than max frames" );
     }
-
+    if (end_frame == 0)
+    {
+      end_frame = max_frames;
+    }
     capturefirst.set(CV_CAP_PROP_POS_FRAMES, start_frame);
     do
     {
@@ -204,8 +213,8 @@ int main( int argc, char **argv ) {
         }
       }
 
-      Mat T = estimateRigidTransform(curr_corners2, first_corners2, true);
-
+      //Mat T = estimateRigidTransform(curr_corners2, first_corners2, true);
+      Mat T = findHomography(curr_corners2, first_corners2, CV_RANSAC);
       if ( T.data == NULL )
       {
         last_T.copyTo(T);
@@ -214,7 +223,9 @@ int main( int argc, char **argv ) {
       T.copyTo(last_T);
 
       Mat currT;
-      warpAffine( curr, currT, T, curr.size() );
+      //warpAffine( curr, currT, T, curr.size() );
+      warpPerspective(curr, currT, T, curr.size());
+
       int vert_border = horizon_crop * first.rows / first.cols;
       currT = currT( Range(vert_border, currT.rows-vert_border), Range(horizon_crop, currT.cols-horizon_crop) );
       resize(currT, currT, curr.size());
