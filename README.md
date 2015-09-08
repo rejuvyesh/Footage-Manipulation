@@ -90,10 +90,13 @@ Options:
   -m [ --manualframe ] arg (=0)     Frame to do manual capturing on.
   -e [ --endframe ] arg(= end of video ) Frame to stop stabilization at.
   -s [ --scalefactor ] arg (=0.25)  Scaling Factor for manual marking.
+  -i [--ransac_max_iters ] arg(=500) Maximum number of iterations for RANSAC.
+  -g [--ransac_good_ratio] arg(=0.9) Inlier Ratio used for RANSAC.
   -f [ --footage ] arg              footage file
   -o [ --output ] arg (=output.avi) output file
 
 ```
+
 When run, manually select the points that you want to track.
 #### What does it do?
 Takes in the footage that you have recorded and creates the corresponding stabilized footage. 

@@ -10,6 +10,8 @@
 #include <vector>
 #include <cmath>
 
+//relative files
+#include "ert.h"
 
 // namespaces
 using namespace std;
@@ -102,6 +104,8 @@ int main( int argc, char **argv ) {
   int start_frame;
   float scale_factor;
   int end_frame;
+  int ransac_max_iters;
+  float ransac_good_ratio;
   try
   {
     po::options_description desc("Options");
@@ -112,6 +116,9 @@ int main( int argc, char **argv ) {
       ("manualframe,m", po::value<int>(&start_frame)->default_value(0), "Frame to do manual capturing on.")
       ("endframe,e", po::value<int>(&end_frame)->default_value(0), "Frame to stop stabilization at.")
       ("scalefactor,s", po::value<float>(&scale_factor)->default_value(0.25), "Scaling Factor for manual marking.")
+      ("ransac_max_iters,i", po::value<int>(&ransac_max_iters)->default_value(500), "Maximum number of iterations for RANSAC.")
+      ("ransac_good_ratio,g", po::value<float>(&ransac_good_ratio)->default_value(0.9), "Inlier Ratio used for RANSAC.")
+      //A higher inlier ratio will force model to only estimate the affine transform using that percentage of inlier points.
       ("footage,f", po::value<string>(&fn)->required(), "footage file")
       ("output,o", po::value<string>(&output_fn)->default_value("output.avi"), "output file");
 
@@ -214,7 +221,8 @@ int main( int argc, char **argv ) {
       }
 
       //Mat T = estimateRigidTransform(curr_corners2, first_corners2, true);
-      Mat T = findHomography(curr_corners2, first_corners2, CV_RANSAC);
+      //Mat T = findHomography(curr_corners2, first_corners2, CV_RANSAC);
+      Mat T = estimateRigidTransformRansac(curr_corners2, first_corners2, true, ransac_max_iters, ransac_good_ratio);
       if ( T.data == NULL )
       {
         last_T.copyTo(T);
@@ -223,8 +231,8 @@ int main( int argc, char **argv ) {
       T.copyTo(last_T);
 
       Mat currT;
-      //warpAffine( curr, currT, T, curr.size() );
-      warpPerspective(curr, currT, T, curr.size());
+      warpAffine( curr, currT, T, curr.size() );
+      //warpPerspective(curr, currT, T, curr.size());
 
       int vert_border = horizon_crop * first.rows / first.cols;
       currT = currT( Range(vert_border, currT.rows-vert_border), Range(horizon_crop, currT.cols-horizon_crop) );

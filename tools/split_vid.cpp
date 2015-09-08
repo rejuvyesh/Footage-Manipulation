@@ -94,7 +94,7 @@ void split_img( int split_num, int x, int y, int num_x, int num_y, int time_spli
 
 int main( int argc, char **argv ) {
   string fn, out_dir;
-  int num_x, num_y, time_split;
+  int num_x, num_y, time_split, kthreads;
   try
   {
     po::options_description desc("Options");
@@ -104,7 +104,8 @@ int main( int argc, char **argv ) {
       ("numx,x", po::value<int>(&num_x)->required(), "number of x splits")
       ("numy,y", po::value<int>(&num_y)->required(), "number of y splits")
       ("timesplit,t", po::value<int>(&time_split)->default_value(1), "number of time splits")
-      ("output,o", po::value<string>(&out_dir)->default_value("."), "output directory");
+      ("output,o", po::value<string>(&out_dir)->default_value("."), "output directory")
+      ("threads,s", po::value<int>(&kthreads)->default_value(4), "number of threads");
 
     po::positional_options_description positionalOptions; 
     positionalOptions.add("footage", 1);
@@ -136,13 +137,20 @@ int main( int argc, char **argv ) {
     }
 
     vector <thread> workers;
+    int kspawned = 0;
     for ( int time_num = 0; time_num < time_split; ++time_num )
     {
       for ( int ny = 0; ny < num_y; ++ny )
       {
         for ( int nx = 0; nx < num_x; ++nx )
         {
+          if ( kspawned > 0 && kspawned % kthreads == 0 )
+          {
+            workers.back().join();
+            workers.pop_back();
+          }
           workers.push_back(thread(split_img, time_num, nx, ny, num_x, num_y, time_split, fn, out_dir));
+          kspawned++;
         }
       }
     }
