@@ -161,6 +161,7 @@ int main( int argc, char **argv ) {
     Mat first, first_grey, first_grey_disp;
     int max_frames = capturefirst.get(CV_CAP_PROP_FRAME_COUNT);
     printf("Number of frames in video: %d\n",max_frames);
+    printf("Reset point selection after %d frames\n",reset_start);
     if ( start_frame > max_frames )
     {
       throw invalid_argument( "start_frame larger than max frames" );
@@ -202,23 +203,6 @@ int main( int argc, char **argv ) {
         break;
       }
 
-      if (k > 0 && k % reset_start == 0)
-      {
-        cvtColor(curr, first_grey, COLOR_BGR2GRAY);
-        resize(first_grey, first_grey_disp, Size(), scale_factor, scale_factor);
-        struct UserData ud(first_grey_disp, &first_corners, box_size, scale_factor);
-        namedWindow("reset", CV_WINDOW_AUTOSIZE);
-        setMouseCallback("reset", select_features_callback, &ud);
-        imshow("reset", first_grey_disp);
-        waitKey(0);
-        cout << first_corners.size() << " corners detected." << endl;
-        destroyAllWindows();
-        writer << curr;
-        continue;
-      }
-
-
-
       cvtColor(curr, curr_grey, COLOR_BGR2GRAY);
       vector <Point2f> curr_corners, curr_corners2;
       vector <uchar> status;
@@ -256,6 +240,22 @@ int main( int argc, char **argv ) {
       resize(currT, currT, curr.size());
       writer << currT;
 
+
+      if (k > 0 && k % reset_start == 0)
+      {
+        printf("\nreseting point selection at frame %d\n",k);
+        Mat first, first_grey, first_grey_disp;
+        cvtColor(currT, first_grey, COLOR_BGR2GRAY);
+        resize(first_grey, first_grey_disp, Size(), scale_factor, scale_factor);
+        vector <Point2f> first_corners, first_corners2;
+        struct UserData ud(first_grey_disp, &first_corners, box_size, scale_factor);
+        namedWindow("first", CV_WINDOW_AUTOSIZE);
+        setMouseCallback("first", select_features_callback, &ud);
+        imshow("first", first_grey_disp);
+        waitKey(0);
+        cout << first_corners.size() << " corners detected." << endl;
+        destroyAllWindows();
+      }
       disp_progress((float)k/(max_frames-1), 50);
       k++;
     }
