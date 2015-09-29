@@ -115,6 +115,7 @@ Options:
   -y [ --numy ] arg           number of y splits
   -t [ --timesplit ] arg (=1) number of time splits
   -o [ --output ] arg (=.)    output directory
+  -l [ --overlap ] arg (0)    number of pixels to overlap spatially between splits.
 ```
 #### What does it do?
 Takes in the stabilized footage and splits it into the number of rectangles and time zones that you would like.
