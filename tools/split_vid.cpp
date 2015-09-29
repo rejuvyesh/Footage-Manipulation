@@ -48,7 +48,7 @@ void disp_progress(float progress, int bar_width)
   cout.flush();
 }
 
-void split_img( int split_num, int x, int y, int num_x, int num_y, int time_split, string fn, string out_dir ) {
+void split_img( int split_num, int x, int y, int num_x, int num_y, int time_split, string fn, string out_dir, int overlap) {
   mtx.lock();
   cout << "worker " << x << "-" << y << "-" << split_num << " running." << endl;
   mtx.unlock();
@@ -61,7 +61,29 @@ void split_img( int split_num, int x, int y, int num_x, int num_y, int time_spli
   int start_frame = split_num * (max_frames / time_split);
 
   capture.set(CV_CAP_PROP_POS_FRAMES, start_frame);
-  Size sz = Size(rect_width, rect_height);
+
+  int this_x = x*rect_width;
+  int this_y = y*rect_height;
+  int this_width = rect_width;
+  int this_height = rect_height;
+
+  //Determine whether to add overlap to the quadrant.
+  if (x > 0){
+    this_x -= overlap;
+    this_width += overlap;
+  }
+  if (y > 0) {
+    this_y -= overlap;
+    this_height += overlap;
+  }
+  if (x != num_x-1) {
+    this_width += overlap;
+  }
+  if (y != num_y-1) {
+    this_height += overlap;
+  }
+
+  Size sz = Size(this_width, this_height);
 
   stringstream out_key;
   out_key << y << "-" << x << "-" << split_num;
@@ -70,7 +92,7 @@ void split_img( int split_num, int x, int y, int num_x, int num_y, int time_spli
   writer.open(out_fn, CV_FOURCC('m','p','4','v'), capture.get(CV_CAP_PROP_FPS), sz, true);
 
   Mat src;
-  Rect rect = Rect( x*rect_width, y*rect_height, rect_width, rect_height );
+  Rect rect = Rect( this_x, this_y, this_width, this_height );
 
   int k = 0;
   while ( k < (max_frames / time_split)-1 )
@@ -94,7 +116,7 @@ void split_img( int split_num, int x, int y, int num_x, int num_y, int time_spli
 
 int main( int argc, char **argv ) {
   string fn, out_dir;
-  int num_x, num_y, time_split, kthreads;
+  int num_x, num_y, time_split, kthreads, overlap;
   try
   {
     po::options_description desc("Options");
@@ -105,7 +127,8 @@ int main( int argc, char **argv ) {
       ("numy,y", po::value<int>(&num_y)->required(), "number of y splits")
       ("timesplit,t", po::value<int>(&time_split)->default_value(1), "number of time splits")
       ("output,o", po::value<string>(&out_dir)->default_value("."), "output directory")
-      ("threads,s", po::value<int>(&kthreads)->default_value(4), "number of threads");
+      ("threads,s", po::value<int>(&kthreads)->default_value(4), "number of threads")
+      ("overlap,l", po::value<int>(&overlap)->default_value(0), "number of pixels to overlap spatially between splits");
 
     po::positional_options_description positionalOptions; 
     positionalOptions.add("footage", 1);
@@ -149,7 +172,7 @@ int main( int argc, char **argv ) {
             workers.back().join();
             workers.pop_back();
           }
-          workers.push_back(thread(split_img, time_num, nx, ny, num_x, num_y, time_split, fn, out_dir));
+          workers.push_back(thread(split_img, time_num, nx, ny, num_x, num_y, time_split, fn, out_dir, overlap));
           kspawned++;
         }
       }
