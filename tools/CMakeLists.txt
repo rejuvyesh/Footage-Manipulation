@@ -5,7 +5,7 @@ add_executable(stabilize stabilize.cpp)
 add_executable(split_vid split_vid.cpp)
 
 add_executable(stabilizedev stabilizedev.cpp)
-
+add_executable(videostab videostab.cpp)
 
 
 
@@ -16,7 +16,7 @@ target_link_libraries(stabilize LINK_PUBLIC ${OpenCV_LIBS} ${Boost_LIBRARIES} Er
 target_link_libraries(split_vid ${OpenCV_LIBS} ${Boost_LIBRARIES})
 
 target_link_libraries(stabilizedev LINK_PUBLIC ${OpenCV_LIBS} ${Boost_LIBRARIES} Ert)
-
+target_link_libraries(videostab LINK_PUBLIC ${OpenCV_LIBS} ${Boost_LIBRARIES} Ert)
 
 # Link the executable to the ERT library. Since the ERT library has
 # public include directories we will use those link directories when stabilize
