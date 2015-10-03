@@ -233,21 +233,20 @@ int main(int argc, char **argv)
         resize(cur2, cur2, cur.size());
 
         // Now draw the original and stablised side by side for coolness
-        Mat canvas = Mat::zeros(cur.rows, cur.cols*2+10, cur.type());
-
-        cur.copyTo(canvas(Range::all(), Range(0, cur2.cols)));
-        cur2.copyTo(canvas(Range::all(), Range(cur2.cols+10, cur2.cols*2+10)));
+        // Mat canvas = Mat::zeros(cur.rows, cur.cols*2+10, cur.type());
+        // cur.copyTo(canvas(Range::all(), Range(0, cur2.cols)));
+        // cur2.copyTo(canvas(Range::all(), Range(cur2.cols+10, cur2.cols*2+10)));
 
         // If too big to fit on the screen, then scale it down by 2, hopefully it'll fit :)
-        if(canvas.cols > 1920) {
-            resize(canvas, canvas, Size(canvas.cols/2, canvas.rows/2));
-        }
+        // if(canvas.cols > 1920) {
+        //     resize(canvas, canvas, Size(canvas.cols/2, canvas.rows/2));
+        // }
 
         // imshow("before and after", canvas);
 
-        //char str[256];
-        //sprintf(str, "images/%08d.jpg", k);
-        //imwrite(str, canvas);
+        char str[256];
+        sprintf(str, "images/%08d.jpg", k);
+        imwrite(str, cur2);
 
         waitKey(20);
 
